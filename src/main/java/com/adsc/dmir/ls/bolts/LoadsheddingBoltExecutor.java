@@ -1,24 +1,19 @@
 package com.adsc.dmir.ls.bolts;
 
 import com.adsc.dmir.ls.IShedding;
-import com.debug.TestPrint;
+import com.adsc.dmir.debug.TestPrint;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.BasicOutputCollector;
-import org.apache.storm.topology.IBasicBolt;
 import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Tuple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.SynchronousQueue;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by kailin on 4/3/17.
@@ -70,7 +65,7 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
                         //new TestPrint("chong?=",drainer.size());
                         for(Tuple input : drainer) {
                             boolean isDrop = _shedder.drop(input);
-                            new TestPrint("wwc?=",isDrop);
+                            //new TestPrint("wwc?=",isDrop);
                             if(isDrop){
                                 dropTupleQueue.put(input);
                             }else{
@@ -108,13 +103,12 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
         try {
             if(!receiveTupleQueue.isEmpty()) {
                 _bolt.execute(receiveTupleQueue.take());
-                new TestPrint("1?=",receiveTupleQueue.size());
+                //new TestPrint("1?=",receiveTupleQueue.size());
             }
             if(!dropTupleQueue.isEmpty()) {
-                _collector.fail(dropTupleQueue.take());
-                new TestPrint("2?=",dropTupleQueue.size());
+                _collector.ack(dropTupleQueue.take());
+                //new TestPrint("2?=",dropTupleQueue.size());
             }
-            new TestPrint("ok?=","a");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

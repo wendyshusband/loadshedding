@@ -1,10 +1,8 @@
 package com.adsc.dmir.ls;
 
-import com.debug.TestPrint;
 import org.apache.storm.tuple.Tuple;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Random;
 
 /**
