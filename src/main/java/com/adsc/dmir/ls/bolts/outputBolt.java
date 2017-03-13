@@ -19,8 +19,7 @@ public class outputBolt extends BaseRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        new TestPrint("fields=",tuple.getFields());
-        new TestPrint("tupto=",tuple.toString());
+        new TestPrint("tupleValue=",tuple.toString());
     }
 
     public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {

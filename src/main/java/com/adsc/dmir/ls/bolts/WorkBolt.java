@@ -22,7 +22,7 @@ public class WorkBolt implements IRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        new TestPrint("caonima=",tuple.toString());
+        new TestPrint("workboltget=",tuple.toString());
         _collector.emit(tuple,new Values(tuple.getString(0)+"tail"));
         _collector.ack(tuple);
     }

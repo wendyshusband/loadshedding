@@ -1,7 +1,7 @@
 package com.adsc.dmir.ls.bolts;
 
-import com.adsc.dmir.ls.IShedding;
 import com.adsc.dmir.debug.TestPrint;
+import com.adsc.dmir.ls.IShedding;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.IRichBolt;
@@ -25,31 +25,22 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
     private IRichBolt _bolt;
     private IShedding _shedder;
     private transient OutputCollector _collector;
-    final int tupleQueueCapacity = 50;
+    final int tupleQueueCapacity = 10;
     private transient BlockingQueue<Tuple> pendingTupleQueue;
-    private transient BlockingQueue<Tuple> receiveTupleQueue;
-    private transient BlockingQueue<Tuple> dropTupleQueue;
 
     public LoadsheddingBoltExecutor(WorkBolt bolt, IShedding shedder){
         _shedder = shedder;
         _bolt = bolt;
-        new TestPrint("workbolt=",_bolt.toString());
+        //new TestPrint("workbolt=",_bolt.toString());
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
         _bolt.prepare(map,topologyContext,outputCollector);
         _collector = new OutputCollector(outputCollector);
         pendingTupleQueue = new ArrayBlockingQueue<Tuple>(tupleQueueCapacity);
-        receiveTupleQueue = new ArrayBlockingQueue<Tuple>(tupleQueueCapacity);
-        dropTupleQueue = new ArrayBlockingQueue<Tuple>(tupleQueueCapacity);
         loadsheddingThread();
     }
 
-    /*test*/
-    public void prepare(){
-        pendingTupleQueue = new ArrayBlockingQueue<Tuple>(tupleQueueCapacity);
-        loadsheddingThread();
-    }
 
     private void loadsheddingThread() {
 
@@ -57,26 +48,27 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
             public void run() {
                 ArrayList<Tuple> drainer = new ArrayList<Tuple>();
                 try {
-                    while (true){
-                        //Tuple tuple = pendingTupleQueue.take();
-                        //drainer.add(tuple);
-                        //new TestPrint("wang?=",pendingTupleQueue.size());
-                        pendingTupleQueue.drainTo(drainer, 30);
-                        //new TestPrint("chong?=",drainer.size());
-                        for(Tuple input : drainer) {
-                            boolean isDrop = _shedder.drop(input);
-                            //new TestPrint("wwc?=",isDrop);
-                            if(isDrop){
-                                dropTupleQueue.put(input);
-                            }else{
-                                receiveTupleQueue.put(input);
-                            }
-
-                        }
+                    boolean done = false;
+                    while (!done){
+                        Tuple tuple = pendingTupleQueue.take();
                         drainer.clear();
+                        drainer.add(tuple);
+                        pendingTupleQueue.drainTo(drainer);
+                        new TestPrint("pending_queue_size=",drainer.size());
+                        //tupleQueueCapacity/2
+                        if(drainer.size() >=5) {
+                            ArrayList<Tuple> result = (ArrayList<Tuple>) _shedder.drop(drainer);
+                            for(Tuple t : result)
+                                _bolt.execute(t);
+                            System.out.println("ifdone!!!!!!!");
+                        }else{
+                            for(Tuple t : drainer)
+                                _bolt.execute(t);
+                            System.out.println("elsedone!!!!!!!");
+                        }
+                        Thread.sleep(500);
                     }
-
-                } catch (InterruptedException e){
+                } catch (Exception e){
                     e.getStackTrace();
                 }
 
@@ -88,11 +80,17 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
     }
 
     public void execute(Tuple tuple) {
+        System.out.println("ssss="+tuple.getValue(0));
         try {
-            new TestPrint("tup=",tuple.toString());
             pendingTupleQueue.put(tuple);
-            new TestPrint("pendingTupleQueuesize=",pendingTupleQueue.size());
-            handle();
+            //pendingTupleQueue.put(tuple);
+            //pendingTupleQueue.put(tuple);
+            //System.out.println("pendsize="+pendingTupleQueue.size());
+            int i= 10000;
+            while(i>0){
+                i--;
+            }
+            //handle();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -100,19 +98,12 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
     }
 
     private void handle() {
-        try {
-            if(!receiveTupleQueue.isEmpty()) {
-                _bolt.execute(receiveTupleQueue.take());
-                //new TestPrint("1?=",receiveTupleQueue.size());
+            try {
+                Tuple input = pendingTupleQueue.take();
+                _bolt.execute(input);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            if(!dropTupleQueue.isEmpty()) {
-                _collector.ack(dropTupleQueue.take());
-                //new TestPrint("2?=",dropTupleQueue.size());
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
     }
 
     public void cleanup() {

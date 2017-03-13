@@ -3,7 +3,8 @@ package com.adsc.dmir.ls;
 import org.apache.storm.tuple.Tuple;
 
 import java.io.Serializable;
-import java.util.Random;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by kailin on 6/3/17.
@@ -11,11 +12,14 @@ import java.util.Random;
 public class Shedding implements IShedding,Serializable {
     public Shedding(){}
 
-    public boolean drop(Tuple tuple) {
-        Random random = new Random();
-        int i = random.nextInt(2);
-        if(i % 2 == 0)
-            return true;
-        return false;
+    public List<Tuple> drop(List<Tuple> queue) {
+        Iterator<Tuple> it = queue.iterator();
+        while(it.hasNext()){
+            Tuple t = it.next();
+            if(0 ==  Integer.valueOf((String) t.getValue(0)) % 2) {
+                it.remove();
+            }
+        }
+        return queue;
     }
 }
