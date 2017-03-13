@@ -19,7 +19,7 @@ public class LoadsheddingTopology {
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setSpout("spout", new TestOverLoadSpout(false), 3);
-        builder.setBolt("loadshedding", new LoadsheddingBoltExecutor(new WorkBolt(),new Shedding()), 2).shuffleGrouping("spout");
+        builder.setBolt("loadshedding", new LoadsheddingBoltExecutor(new WorkBolt(),new RandomShedding()), 2).shuffleGrouping("spout");
         builder.setBolt("output",new outputBolt(),1).shuffleGrouping("loadshedding");
         Config conf = new Config();
         conf.setDebug(true);

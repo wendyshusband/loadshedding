@@ -49,15 +49,17 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
                 ArrayList<Tuple> drainer = new ArrayList<Tuple>();
                 try {
                     boolean done = false;
+                    double shedRate = 0.0;
+                    Tuple tuple = null;
                     while (!done){
-                        Tuple tuple = pendingTupleQueue.take();
+                        tuple = pendingTupleQueue.take();
                         drainer.clear();
                         drainer.add(tuple);
                         pendingTupleQueue.drainTo(drainer);
                         new TestPrint("pending_queue_size=",drainer.size());
-                        //tupleQueueCapacity/2
-                        if(drainer.size() >=5) {
-                            ArrayList<Tuple> result = (ArrayList<Tuple>) _shedder.drop(drainer);
+                        shedRate = (drainer.size() *1.0) / tupleQueueCapacity;
+                        if(drainer.size() >= (tupleQueueCapacity/2)) {
+                            ArrayList<Tuple> result = (ArrayList<Tuple>) _shedder.drop(shedRate,drainer,_collector);
                             for(Tuple t : result)
                                 _bolt.execute(t);
                             System.out.println("ifdone!!!!!!!");
@@ -66,7 +68,7 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
                                 _bolt.execute(t);
                             System.out.println("elsedone!!!!!!!");
                         }
-                        Thread.sleep(500);
+
                     }
                 } catch (Exception e){
                     e.getStackTrace();
@@ -80,16 +82,9 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        System.out.println("ssss="+tuple.getValue(0));
+        System.out.println("tuple="+tuple.getValue(0));
         try {
             pendingTupleQueue.put(tuple);
-            //pendingTupleQueue.put(tuple);
-            //pendingTupleQueue.put(tuple);
-            //System.out.println("pendsize="+pendingTupleQueue.size());
-            int i= 10000;
-            while(i>0){
-                i--;
-            }
             //handle();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -97,14 +92,14 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
 
     }
 
-    private void handle() {
+ /*   private void handle() {
             try {
                 Tuple input = pendingTupleQueue.take();
                 _bolt.execute(input);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-    }
+    }*/
 
     public void cleanup() {
         _bolt.cleanup();

@@ -1,6 +1,5 @@
 package com.adsc.dmir.ls.bolts;
 
-import com.adsc.dmir.debug.TestPrint;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.IRichBolt;
@@ -22,8 +21,12 @@ public class WorkBolt implements IRichBolt {
     }
 
     public void execute(Tuple tuple) {
-        new TestPrint("workboltget=",tuple.toString());
-        _collector.emit(tuple,new Values(tuple.getString(0)+"tail"));
+        try {
+            Thread.sleep(600);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        _collector.emit(tuple,new Values(tuple.getValue(0)+"tail"));
         _collector.ack(tuple);
     }
 
