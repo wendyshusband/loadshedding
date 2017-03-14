@@ -1,7 +1,8 @@
 package com.adsc.dmir.ls.bolts;
 
 import com.adsc.dmir.debug.TestPrint;
-import com.adsc.dmir.ls.IShedding;
+import com.adsc.dmir.ls.ShedDecisionMaker;
+import com.adsc.dmir.ls.shedding.IShedding;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.IRichBolt;
@@ -31,7 +32,6 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
     public LoadsheddingBoltExecutor(WorkBolt bolt, IShedding shedder){
         _shedder = shedder;
         _bolt = bolt;
-        //new TestPrint("workbolt=",_bolt.toString());
     }
 
     public void prepare(Map map, TopologyContext topologyContext, OutputCollector outputCollector) {
@@ -47,38 +47,40 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
         final Thread thread = new Thread(new Runnable() {
             public void run() {
                 ArrayList<Tuple> drainer = new ArrayList<Tuple>();
-                try {
-                    boolean done = false;
-                    double shedRate = 0.0;
-                    Tuple tuple = null;
-                    while (!done){
+                boolean done = false;
+                double shedRate = 0.0;
+                Tuple tuple = null;
+                ShedDecisionMaker decisionMaker = new ShedDecisionMaker();
+                Integer[] decision = new Integer[2];
+                while (!done) {
+                    try {
                         tuple = pendingTupleQueue.take();
-                        drainer.clear();
-                        drainer.add(tuple);
-                        pendingTupleQueue.drainTo(drainer);
-                        new TestPrint("pending_queue_size=",drainer.size());
-                        shedRate = (drainer.size() *1.0) / tupleQueueCapacity;
-                        if(drainer.size() >= (tupleQueueCapacity/2)) {
-                            ArrayList<Tuple> result = (ArrayList<Tuple>) _shedder.drop(shedRate,drainer,_collector);
-                            for(Tuple t : result)
-                                _bolt.execute(t);
-                            System.out.println("ifdone!!!!!!!");
-                        }else{
-                            for(Tuple t : drainer)
-                                _bolt.execute(t);
-                            System.out.println("elsedone!!!!!!!");
-                        }
-
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                } catch (Exception e){
-                    e.getStackTrace();
+                    drainer.clear();
+                    drainer.add(tuple);
+                    pendingTupleQueue.drainTo(drainer);
+                    new TestPrint("pending_queue_size=", drainer.size());
+                    shedRate = (drainer.size() * 1.0) / tupleQueueCapacity;
+                    decision[0] = tupleQueueCapacity;
+                    decision[1] = drainer.size();
+                    if (decisionMaker.decisionMaker(decision)) {
+                        ArrayList<Tuple> result = (ArrayList<Tuple>) _shedder.drop(shedRate, drainer, _collector);
+                        for (Tuple t : result)
+                            _bolt.execute(t);
+                        System.out.println("ifdone!!!!!!!");
+                    } else {
+                        for (Tuple t : drainer)
+                            _bolt.execute(t);
+                        System.out.println("elsedone!!!!!!!");
+                    }
                 }
-
             }
 
         });
         thread.start();
-        System.out.println("loadshedding thread start!");
+        LOG.info("loadshedding thread start!");
     }
 
     public void execute(Tuple tuple) {
@@ -114,7 +116,7 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
     }
 
     public static void main(String[] args) {
-
+        //System.out.println(System.currentTimeMillis());
     }
 }
 

@@ -3,6 +3,7 @@ package com.adsc.dmir.ls;
 import com.adsc.dmir.ls.bolts.LoadsheddingBoltExecutor;
 import com.adsc.dmir.ls.bolts.WorkBolt;
 import com.adsc.dmir.ls.bolts.outputBolt;
+import com.adsc.dmir.ls.shedding.RandomShedding;
 import com.adsc.dmir.ls.spouts.TestOverLoadSpout;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
@@ -32,7 +33,6 @@ public class LoadsheddingTopology {
             LocalCluster cluster = new LocalCluster();
             cluster.submitTopology("test", conf, builder.createTopology());
             Utils.sleep(10000);
-
         }
     }
 }
