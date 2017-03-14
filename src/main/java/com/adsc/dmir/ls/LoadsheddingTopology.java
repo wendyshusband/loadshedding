@@ -1,6 +1,6 @@
 package com.adsc.dmir.ls;
 
-import com.adsc.dmir.ls.bolts.LoadsheddingBoltExecutor;
+import com.adsc.dmir.ls.bolts.RandomSheddableBolt;
 import com.adsc.dmir.ls.bolts.WorkBolt;
 import com.adsc.dmir.ls.bolts.outputBolt;
 import com.adsc.dmir.ls.shedding.RandomShedding;
@@ -20,7 +20,7 @@ public class LoadsheddingTopology {
         TopologyBuilder builder = new TopologyBuilder();
 
         builder.setSpout("spout", new TestOverLoadSpout(false), 3);
-        builder.setBolt("loadshedding", new LoadsheddingBoltExecutor(new WorkBolt(),new RandomShedding()), 2).shuffleGrouping("spout");
+        builder.setBolt("loadshedding", new RandomSheddableBolt(new WorkBolt(),new RandomShedding()), 2).shuffleGrouping("spout");
         builder.setBolt("output",new outputBolt(),1).shuffleGrouping("loadshedding");
         Config conf = new Config();
         conf.setDebug(true);

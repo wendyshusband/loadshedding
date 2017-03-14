@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -19,9 +20,9 @@ import java.util.concurrent.BlockingQueue;
 /**
  * Created by kailin on 4/3/17.
  */
-public class LoadsheddingBoltExecutor implements IRichBolt {
+public class RandomSheddableBolt implements IRichBolt,IShedding {
 
-    public static Logger LOG = LoggerFactory.getLogger(LoadsheddingBoltExecutor.class);
+    public static Logger LOG = LoggerFactory.getLogger(RandomSheddableBolt.class);
 
     private IRichBolt _bolt;
     private IShedding _shedder;
@@ -29,7 +30,7 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
     final int tupleQueueCapacity = 10;
     private transient BlockingQueue<Tuple> pendingTupleQueue;
 
-    public LoadsheddingBoltExecutor(WorkBolt bolt, IShedding shedder){
+    public RandomSheddableBolt(WorkBolt bolt, IShedding shedder){
         _shedder = shedder;
         _bolt = bolt;
     }
@@ -117,6 +118,11 @@ public class LoadsheddingBoltExecutor implements IRichBolt {
 
     public static void main(String[] args) {
         //System.out.println(System.currentTimeMillis());
+    }
+
+    @Override
+    public List drop(double shedRate, List queue, OutputCollector collector) {
+        return null;
     }
 }
 
